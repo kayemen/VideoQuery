@@ -58,3 +58,6 @@ docs/_build/
 target/
 
 *.zip
+proj_spec/ReferenceCode
+proj_spec/ReferenceCode/*
+*.whl

@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+PyAudio = "==0.2.11"
+decorator = "==4.2.1"
+Keras = "==2.1.5"
+networkx = "==2.1"
+numpy = "==1.14.2"
+Pillow = "==5.0.0"
+PyWavelets = "==0.5.2"
+PyYAML = "==3.12"
+scikit-image = "==0.13.1"
+scikit-learn = "==0.19.1"
+scikit-video = "==1.1.10"
+scipy = "==1.0.1"
+six = "==1.11.0"
+sqlalchemy = "*"
+matplotlib = "*"
+cvbuilder = "*"
+"43f6012" = {path = ".\\wheels\\opencv_python-3.4.1-cp36-cp36m-win_amd64.whl"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"
