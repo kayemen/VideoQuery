@@ -61,3 +61,8 @@ target/
 proj_spec/ReferenceCode
 proj_spec/ReferenceCode/*
 *.whl
+database/*
+query/*
+
+\.vscode/
+local_config.py
