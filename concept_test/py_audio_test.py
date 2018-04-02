@@ -8,41 +8,90 @@ import random
 # filename = r".\10kHz_44100Hz_16bit_05sec.wav"
 filename = r".\440Hz_44100Hz_16bit_05sec.wav"
 
-# open a wav format music
-f = wave.open(
-    filename, "rb")
+# # -----------------------------BLOCKING-------------------------------------
 
-# instantiate PyAudio
+# # open a wav format music
+# f = wave.open(
+#     filename, "rb")
+
+# # instantiate PyAudio
+# p = pyaudio.PyAudio()
+
+# # print(f.getsampwidth())
+# # print(f.getnchannels())
+# # print(f.getframerate())
+# # code.interact(local=locals())
+
+# # input()
+
+# # open stream
+# stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
+#                 channels=f.getnchannels(),
+#                 rate=f.getframerate(),
+#                 output=True)
+
+# # define stream chunk
+# chunk = 1024
+
+# # read data
+# data = f.readframes(chunk)
+
+# # play stream
+# while data:
+#     stream.write(data)
+#     # time.sleep(random.random()/10)
+#     data = f.readframes(chunk)
+
+# # stop stream
+# stream.stop_stream()
+# stream.close()
+
+# # close PyAudio
+# p.terminate()
+
+
+# -----------------------------NON BLOCKING-------------------------------------------
+import pyaudio
+import wave
+import time
+import sys
+
+# if len(sys.argv) < 2:
+#     print("Plays a wave file.\n\nUsage: %s filename.wav" % sys.argv[0])
+#     sys.exit(-1)
+
+wf = wave.open(filename, 'rb')
+
+# instantiate PyAudio (1)
 p = pyaudio.PyAudio()
 
-print(f.getsampwidth())
-print(f.getnchannels())
-print(f.getframerate())
-code.interact(local=locals())
+# define callback (2)
 
-# input()
 
-# open stream
-stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
-                channels=f.getnchannels(),
-                rate=f.getframerate(),
-                output=True)
+def callback(in_data, frame_count, time_info, status):
+    print(time_info)
+    data = wf.readframes(frame_count)
+    return (data, pyaudio.paContinue)
 
-# define stream chunk
-chunk = 1024
 
-# read data
-data = f.readframes(chunk)
+# open stream using callback (3)
+stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                channels=wf.getnchannels(),
+                rate=wf.getframerate(),
+                output=True,
+                stream_callback=callback)
 
-# play stream
-while data:
-    stream.write(data)
-    # time.sleep(random.random()/10)
-    data = f.readframes(chunk)
+# start the stream (4)
+stream.start_stream()
 
-# stop stream
+# wait for stream to finish (5)
+while stream.is_active():
+    time.sleep(0.1)
+
+# stop stream (6)
 stream.stop_stream()
 stream.close()
+wf.close()
 
-# close PyAudio
+# close PyAudio (7)
 p.terminate()

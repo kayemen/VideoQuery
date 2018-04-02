@@ -1,0 +1,13 @@
+PipEnv-
+https://docs.pipenv.org/
+
+Wheel file locations (Windows)-
+https://www.lfd.uci.edu/~gohlke/pythonlibs/
+
+OpenCV 3 installation (windows) - 
+https://www.solarianprogrammer.com/2016/09/17/install-opencv-3-with-python-3-on-windows/
+
+tkinter
+Function binds - http://infohost.nmt.edu/tcc/help/pubs/tkinter/web/event-types.html
+Video playlist - https://www.youtube.com/watch?v=RJB1Ek2Ko_Y&list=PL6gx4Cwl9DGBwibXFtPtflztSNPGuIB_d
+opencv tkinter - https://www.pyimagesearch.com/2016/05/30/displaying-a-video-feed-with-opencv-and-tkinter/
