@@ -1,13 +1,24 @@
 *Task list for Video Searching project*
 
+Discussion:
+  ☐ Finalize video feature vector
+  ☐ Finalize work distribution
+
 Core functionality:
-  ☐ 
+  ☐ Video features
+    ☐ Average color of frame
+    ☐ 
 
 GUI:
-  ☐ 
+  ☐ Create video player widget
+  ☐ Create ranked list widget
+  ☐ Create match graph widget
+  ☐ Create control panel widget
 
 Learning model:
-  ☐ 
+  ☐ Bag of words model on features
+  ☐ Distance metric between frames based on features
+  ☐ BRL for feature weighting and rule list
 
 Documentation/Presentation:
   ☐ 
