@@ -62,6 +62,10 @@ import sys
 
 wf = wave.open(filename, 'rb')
 
+print(wf.getsampwidth())
+print(wf.getnchannels())
+print(wf.getframerate())
+
 # instantiate PyAudio (1)
 p = pyaudio.PyAudio()
 
@@ -69,7 +73,7 @@ p = pyaudio.PyAudio()
 
 
 def callback(in_data, frame_count, time_info, status):
-    print(time_info)
+    # print(time_info)
     data = wf.readframes(frame_count)
     return (data, pyaudio.paContinue)
 
@@ -80,6 +84,7 @@ stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
                 rate=wf.getframerate(),
                 output=True,
                 stream_callback=callback)
+
 
 # start the stream (4)
 stream.start_stream()

@@ -27,8 +27,6 @@ class Application(tk.Frame):
                               command=root.destroy)
         self.quit.pack(side="bottom")
 
-        
-
     def turn_red(self, event):
         event.widget["text"] = "red"
         event.widget["fg"] = "red"
@@ -50,5 +48,5 @@ root = tk.Tk()
 # print(path)
 app = Application(master=root)
 root.title("Test app")
-root.minsize(1000, 400)
+# root.minsize(1000, 400)
 app.mainloop()
