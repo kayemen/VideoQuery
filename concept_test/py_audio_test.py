@@ -3,10 +3,11 @@ import wave
 import time
 import code
 import random
-
+import cv2
 
 # filename = r".\10kHz_44100Hz_16bit_05sec.wav"
-filename = r".\440Hz_44100Hz_16bit_05sec.wav"
+filename = r".\concept_test\StarCraft.wav"
+# filename = r".\concept_test\440Hz_44100Hz_16bit_05sec.wav"
 
 # # -----------------------------BLOCKING-------------------------------------
 
@@ -62,19 +63,31 @@ import sys
 
 wf = wave.open(filename, 'rb')
 
+print(dir(wf))
 print(wf.getsampwidth())
 print(wf.getnchannels())
 print(wf.getframerate())
+
+framesize = wf.getsampwidth()
+n_channels = wf.getnchannels()
 
 # instantiate PyAudio (1)
 p = pyaudio.PyAudio()
 
 # define callback (2)
 
+P = 1
+
 
 def callback(in_data, frame_count, time_info, status):
-    # print(time_info)
-    data = wf.readframes(frame_count)
+    # print(in_data)
+    global P
+    if P:
+        data = wf.readframes(frame_count)
+    else:
+        data = bytes(frame_count*framesize*n_channels)
+    print(len(data))
+    # print(type(data))
     return (data, pyaudio.paContinue)
 
 
@@ -91,7 +104,15 @@ stream.start_stream()
 
 # wait for stream to finish (5)
 while stream.is_active():
-    time.sleep(0.1)
+    try:
+        P = P
+        time.sleep(0.1)
+    except KeyboardInterrupt:
+        P = 1-P
+        print('Changed state')
+    # key = cv2.waitKey(10)
+    # if key == 13 or key == 27:
+    #     P = 1-P
 
 # stop stream (6)
 stream.stop_stream()

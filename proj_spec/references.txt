@@ -14,3 +14,6 @@ opencv tkinter - https://www.pyimagesearch.com/2016/05/30/displaying-a-video-fee
 
 pyaudio
 docs - http://people.csail.mit.edu/hubert/pyaudio/docs/#example-callback-mode-audio-i-o
+
+Audio Video syncronization
+http://zulko.github.io/blog/2013/09/19/a-basic-example-of-threads-synchronization-in-python/
