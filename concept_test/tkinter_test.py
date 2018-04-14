@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
+import threading
+import time
 
 
 class Application(tk.Frame):
@@ -8,6 +10,8 @@ class Application(tk.Frame):
         self.pack()
         self.create_widgets()
         self.count = 0
+        self.updatethread = threading.Thread(target=self.updater)
+        self.updatethread.start()
 
     def create_widgets(self):
         self.hi_there = tk.Button(self)
@@ -23,9 +27,16 @@ class Application(tk.Frame):
         self.cbutton.bind("<Leave>", self.turn_green)
         self.cbutton.pack(side='left')
 
+        self.s = tk.Scale(self, from_=0, to=10,
+                          orient=tk.HORIZONTAL, length=200,
+                          showvalue=0)
+        self.s.pack()
+
         self.quit = tk.Button(self, text="QUIT", fg="red", bg='black',
-                              command=root.destroy)
+                              command=self.onClose)
         self.quit.pack(side="bottom")
+
+        self.stop_flag = threading.Event()
 
     def turn_red(self, event):
         event.widget["text"] = "red"
@@ -34,6 +45,18 @@ class Application(tk.Frame):
     def turn_green(self, event):
         event.widget["text"] = "green"
         event.widget["fg"] = "green"
+
+    def onClose(self):
+        self.stop_flag.set()
+        self.updatethread.join()
+        root.destroy()
+
+    def updater(self):
+        count = 0
+        while not self.stop_flag.is_set():
+            self.s.set(count)
+            count = (count+1) % 10
+            time.sleep(1)
 
     def say_hi(self):
         print("hi there, everyone!")
