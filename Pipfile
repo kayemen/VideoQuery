@@ -21,6 +21,7 @@ sqlalchemy = "*"
 matplotlib = "*"
 cvbuilder = "*"
 "43f6012" = {path = ".\\wheels\\opencv_python-3.4.1-cp36-cp36m-win_amd64.whl"}
+Pipfile = "*"
 
 [dev-packages]
 pylint = "*"
