@@ -6,6 +6,7 @@ import threading
 import tkinter as tk
 from queue import Queue, Empty
 import code
+import traceback
 
 import numpy as np
 import pyaudio
@@ -178,6 +179,7 @@ class VideoPlayer(tk.Frame):
                 )
             return (data, pyaudio.paContinue)
         except:
+            traceback.print_exc()
             data = bytes(1)
             print('PyAudio buffer underflow. Stream aborted')
             return (data, pyaudio.paAbort)

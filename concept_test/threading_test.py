@@ -5,6 +5,7 @@ import tkinter as tk
 
 class A:
     def __init__(self):
+        self.root =
         self.t = threading.Thread(target=self.test, args=())
         self.e = threading.Event()
 

@@ -10,7 +10,12 @@ import config
 
 
 class Video(object):
-    def __init__(self, video_path, audio_path, fps=config.FRAME_RATE):
+    def __init__(self, video_path, audio_path, fps=config.FRAME_RATE, name=None):
+        if name is None:
+            name = os.path.basename(video_path)
+
+        self.name = name
+
         self.read_video(video_path)
         self.read_audio(audio_path)
 
@@ -63,9 +68,9 @@ class Video(object):
 
     def check_audio_video_length(self):
         self.audioframes_per_videoframe = self.audio_rate // self.fps
-        print(self.audioframes_per_videoframe)
-        print(self.num_audio_frames // self.audioframes_per_videoframe)
-        print(self.num_video_frames)
+        # print(self.audioframes_per_videoframe)
+        if not (self.num_audio_frames // self.audioframes_per_videoframe == self.num_video_frames):
+            print("Insufficient audio frames. Padding with 0 at end")
 
     def get_video_frame(self, frame_no):
         f = max(0, min(frame_no, self.num_video_frames-1))
