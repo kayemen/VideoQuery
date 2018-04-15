@@ -11,9 +11,16 @@ Core functionality:
 
 GUI:
   ☐ Create video player widget
+    ☐ Create control panel widget
+    ☐ Create seekbar widget
+    ☐ Sync audio and frame playback
   ☐ Create ranked list widget
   ☐ Create match graph widget
-  ☐ Create control panel widget
+
+Framework and modules:
+  ☐ Database schema and models
+  ☐ Feature extraction
+  ☐ Database IO
 
 Learning model:
   ☐ Bag of words model on features
