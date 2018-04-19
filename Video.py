@@ -22,11 +22,7 @@ class Video(object):
         self.fps = fps
         self.frame_delay = 1.0/fps
 
-        self.features = {
-            'video': {},
-            'frame': [{} for _ in range(self.num_video_frames)],
-            'audio': [{} for _ in range(self.num_video_frames)]
-        }
+        self.features = {}
 
         self.check_audio_video_length()
 
@@ -64,6 +60,8 @@ class Video(object):
         self.audio = audio.readframes(
             self.num_audio_frames)
 
+        audio.close()
+
         return self.audio
 
     def check_audio_video_length(self):
@@ -71,6 +69,8 @@ class Video(object):
         # print(self.audioframes_per_videoframe)
         if not (self.num_audio_frames // self.audioframes_per_videoframe == self.num_video_frames):
             print("Insufficient audio frames. Padding with 0 at end")
+            print("Length of audio", self.num_audio_frames/self.audio_rate)
+            print("Length of video", self.num_video_frames/self.fps)
 
     def get_video_frame(self, frame_no):
         f = max(0, min(frame_no, self.num_video_frames-1))
@@ -95,14 +95,14 @@ class Video(object):
 
 if __name__ == '__main__':
     folders = [x[0]
-               for x in os.walk('D:\\Scripts\\CS576\\Final_project\\database\\')][1:]
+               for x in os.walk(config.DB_VID_ROOT)][1:]
     print('='*80)
     print('Video list')
     print('-'*80)
     print('\n'.join(['%d. %s' % (i+1, f) for (i, f) in enumerate(folders)]))
     print('='*80)
 
-    choice = 1
+    choice = -1
     while choice not in range(1, len(folders)+1):
         choice = int(input('Select folder:'))
 
@@ -112,4 +112,4 @@ if __name__ == '__main__':
     vid_path = selected_folder
     aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
     v = Video(vid_path, aud_path)
-    code.interact()
+    code.interact(local=locals())

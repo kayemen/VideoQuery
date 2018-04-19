@@ -287,7 +287,7 @@ class VideoPlayer(object):
 
 if __name__ == '__main__':
     folders = [x[0]
-               for x in os.walk('D:\\Scripts\\CS576\\Final_project\\database\\')][1:]
+               for x in os.walk(config.DB_VID_ROOT)][1:]
     print('='*80)
     print('Video list')
     print('-'*80)
