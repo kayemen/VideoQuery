@@ -22,6 +22,7 @@ class VideoPlayer(tk.Frame):
 
     def __init__(self, master, video_obj):
         super().__init__(master)
+        self.master = master
         self.pack()
 
         # self.root = tk.Tk()
@@ -221,13 +222,13 @@ class VideoPlayer(tk.Frame):
         print('Joining rendering thread')
         self.renderingThread.join()
         print('Render thread complete')
-        root.quit()
+        self.master.quit()
         # self.master.destroy()
 
 
 if __name__ == '__main__':
     folders = [x[0]
-               for x in os.walk('D:\\Scripts\\CS576\\Final_project\\database\\')][1:]
+               for x in os.walk(config.QUERY_VID_ROOT)][1:]
     print('='*80)
     print('Video list')
     print('-'*80)
@@ -245,9 +246,9 @@ if __name__ == '__main__':
     aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
     v = Video(vid_path, aud_path)
     root = tk.Tk()
-    root.wm_title("Video Query")
-
     player = VideoPlayer(root, v)
+
+    root.wm_title("Video Player")
     root.wm_protocol("WM_DELETE_WINDOW", player.onClose)
     try:
         root.mainloop()

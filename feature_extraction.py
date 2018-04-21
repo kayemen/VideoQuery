@@ -1,8 +1,13 @@
 import os
 import glob
+import code
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+import imagehash as imhash
+from skvideo.motion import blockMotion
+from PIL import Image
 
 import config
 from Video import Video
@@ -11,64 +16,122 @@ from Video import Video
 def extract_features(vid_obj, feature_list=()):
     # all_ = False
     available_features = [
-        'vid_bt_profile'
+        'brightness_profile',
+        # 'audio_spectrogram',
+        'frame_perceptive_hash',
+        'video_motion_vecs'
     ]
     if len(set(feature_list).intersection(set(available_features))) == 0:
         # all_ = True
         feature_list = tuple(available_features)
+    else:
+        feature_list = tuple(
+            set(feature_list).intersection(set(available_features)))
 
-    if 'vid_bt_profile' in feature_list:
-        bt, r, g, b = video_brightness_profile(
+    if 'brightness_profile' in feature_list:
+        y, r, g, b = video_brightness_profile(
             vid_obj.frames)
-        plt.figure()
-        plt.plot(bt, label='Y', c='k')
-        plt.plot(r, label='R', c='r')
-        plt.plot(g, label='G', c='g')
-        plt.plot(b, label='B', c='b')
-        plt.title('Brightness profile - %s' % (vid_obj.name))
-        plt.legend()
-    # plt.show()
+        # plt.figure()
+        # plt.plot(y, label='Y', c='k')
+        # plt.plot(r, label='R', c='r')
+        # plt.plot(g, label='G', c='g')
+        # plt.plot(b, label='B', c='b')
+        # plt.title('Brightness profile - %s' % (vid_obj.name))
+        # plt.legend()
+        vid_obj.features['brightness_profile_y'] = y
+        vid_obj.features['brightness_profile_r'] = r
+        vid_obj.features['brightness_profile_g'] = g
+        vid_obj.features['brightness_profile_b'] = b
+
+    if 'audio_spectrogram' in feature_list:
+        pass
+
+    if 'frame_perceptive_hash' in feature_list:
+        ah, ph, wh, dh_h, dh_v = video_perceptive_hash(vid_obj.frames)
+        vid_obj.features['perceptual_hash_ahash'] = ah
+        vid_obj.features['perceptual_hash_phash'] = ph
+        vid_obj.features['perceptual_hash_whash'] = wh
+        vid_obj.features['perceptual_hash_dhhash'] = dh_h
+        vid_obj.features['perceptual_hash_dvhash'] = dh_v
+
+    if 'video_motion_vecs' in feature_list:
+        # print('here')
+        bm = blockMotion(
+            np.asarray(vid_obj.frames),
+            mbSize=config.BM_MACROBLOCK_SIZE,
+            p=config.BM_DISTANCE
+        )
+        vid_obj.features['blockmotion_vecs_x'] = bm[:, :, :, 1]
+        vid_obj.features['blockmotion_vecs_y'] = bm[:, :, :, 0]
+        # code.interact(local=locals())
+        # plt.imshow(bm)
+        # plt.show()
+        # plt.show()
 
 
 def video_brightness_profile(frames):
-    bt_profile = np.zeros(len(frames))
+    def compute_frame_brightness(frame):
+        if len(frame.shape) > 2:
+            R = frame[:, :, 0]
+            G = frame[:, :, 1]
+            B = frame[:, :, 2]
+            Y = 0.299 * R + 0.587 * G + 0.114 * B
+
+            return np.mean(Y)
+        else:
+            return np.mean(frame)
+
+    y_profile = np.zeros(len(frames))
     r_profile = np.zeros(len(frames))
     g_profile = np.zeros(len(frames))
     b_profile = np.zeros(len(frames))
     for i, frame in enumerate(frames):
-        bt_profile[i] = compute_frame_brightness(frame)
+        y_profile[i] = compute_frame_brightness(frame)
         r_profile[i] = compute_frame_brightness(frame[:, :, 0])
         g_profile[i] = compute_frame_brightness(frame[:, :, 1])
         b_profile[i] = compute_frame_brightness(frame[:, :, 2])
 
-    # norm_fact = np.max(
-    #     [np.max(r_profile), np.max(g_profile), np.max(b_profile)]
-    # )
-    # bt_profile = bt_profile / norm_fact
-    # r_profile = r_profile / norm_fact
-    # g_profile = g_profile / norm_fact
-    # b_profile = b_profile / norm_fact
-    return bt_profile, r_profile, g_profile, b_profile
-
-
-def compute_frame_brightness(frame):
-    if len(frame.shape) > 2:
-        R = frame[:, :, 0]
-        G = frame[:, :, 1]
-        B = frame[:, :, 2]
-        Y = 0.299 * R + 0.587 * G + 0.114 * B
-
-        return np.mean(Y)
-    else:
-        return np.mean(frame)
+    return y_profile, r_profile, g_profile, b_profile
 
 
 def video_perceptive_hash(frames):
-    pass
+    def frame_perceptive_hash(frame):
+        im = Image.fromarray(frame)
+        ah = imhash.average_hash(im).hash.astype(float)
+        ph = imhash.phash(im).hash.astype(float)
+        wh = imhash.whash(im).hash.astype(float)
+        dh_h = imhash.dhash(im).hash.astype(float)
+        dh_v = imhash.dhash_vertical(im).hash.astype(float)
 
+        return (ah, ph, wh, dh_h, dh_v)
 
-def frame_perceptive_hash(frames):
-    pass
+    avg_hash = []
+    prcptv_hash = []
+    wvlt_hash = []
+    diff_horz_hash = []
+    diff_vert_hash = []
+
+    for frame in frames:
+        ah, ph, wh, dh_h, dh_v = frame_perceptive_hash(frame)
+        avg_hash.append(ah)
+        prcptv_hash.append(ph)
+        wvlt_hash.append(wh)
+        diff_horz_hash.append(dh_h)
+        diff_vert_hash.append(dh_v)
+
+    avg_hash = np.asarray(avg_hash)
+    prcptv_hash = np.asarray(prcptv_hash)
+    wvlt_hash = np.asarray(wvlt_hash)
+    diff_horz_hash = np.asarray(diff_horz_hash)
+    diff_vert_hash = np.asarray(diff_vert_hash)
+
+    # code.interact(local=locals())
+
+    # plt.figure(1)
+    # plt.clf()
+    # plt.imshow(h.hash.astype(float), cmap='gray')
+    # plt.pause(0.1)
+    return (avg_hash, prcptv_hash, wvlt_hash, diff_horz_hash, diff_vert_hash)
 
 
 def audio_perceptive_hash(frames):
@@ -77,7 +140,7 @@ def audio_perceptive_hash(frames):
 
 if __name__ == '__main__':
     folders = [x[0]
-               for x in os.walk('D:\\Scripts\\CS576\\Final_project\\database\\')][1:]
+               for x in os.walk(config.DB_VID_ROOT)][1:]
     print('='*80)
     print('Video list')
     print('-'*80)
@@ -90,6 +153,7 @@ if __name__ == '__main__':
 
     # for choice in range(1, len(folders)+1):
     for choice in range(1, 2):
+        tic = time.time()
         selected_folder = folders[choice-1]
         print(selected_folder)
 
@@ -97,5 +161,8 @@ if __name__ == '__main__':
         aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
         v = Video(vid_path, aud_path)
 
-        extract_features(v)
-    plt.show()
+        extract_features(v, ('video_motion_vecs', ))
+        print('Time taken', time.time()-tic)
+        code.interact(local=locals())
+    # plt.show()
+    # code.interact(local=locals())
