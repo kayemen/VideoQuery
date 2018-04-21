@@ -6,3 +6,8 @@ http://ieeexplore.ieee.org/document/5734750/
 Image perceptual hashes-
 https://pypi.python.org/pypi/ImageHash
 http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html
+
+
+Motion vector - 
+
+X motion is better discriminant than Y motion. Possible reason is that there is a lot more horizontal motion in videos (pan of camera) vs vertical. Hence more false positives for Y motion correlation
