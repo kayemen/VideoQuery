@@ -7,18 +7,6 @@ import config
 
 PLOT = False
 
-FEATURE_WEIGHTS = {
-    'brightness_profile_y': 0.1,
-    'brightness_profile_r': 0.1,
-    'brightness_profile_g': 0.1,
-    'brightness_profile_b': 0.1,
-    'perceptual_hash_ahash': 1,
-    'perceptual_hash_phash': 1,
-    'perceptual_hash_whash': 1,
-    'perceptual_hash_dhhash': 1,
-    'perceptual_hash_dvhash': 1
-}
-
 
 def rank_features(query_scores):
     i = 0
@@ -28,7 +16,7 @@ def rank_features(query_scores):
         # weights = np.asarray([FEATURE_WEIGHTS.get(label, 1.0)
         #   for label in labels])
         y = np.asarray([np.asarray(feature_scores[i]) *
-                        FEATURE_WEIGHTS.get(i, 1.0) for i in labels])
+                        config.FEATURE_WEIGHTS.get(i, config.DEFAULT_WEIGHT) for i in labels])
         Y = np.sum(y, axis=0)
 
         scores.append((vid_name, np.max(Y), y, Y, labels))
@@ -46,15 +34,26 @@ def generate_plots(final_scores):
         Y = score[3]
         labels = score[4]
 
-        plt.figure(i+2)
-        plt.stackplot(range(y.shape[1]), y, labels=labels)
-        plt.title(vid_name)
-        plt.legend()
         plt.figure(1)
         plt.plot(range(Y.shape[0]), Y, label=vid_name)
 
+        plt.figure(2)
+        plt.subplot(3, 3, i + 1)
+        plt.ylim(0, 2)
+        plt.stackplot(range(y.shape[1]), y, labels=labels)
+        plt.title(vid_name)
+
     plt.figure(1)
     plt.legend()
+    plt.figure(2)
+    plt.subplot(3, 3, 9)
+    s = plt.stackplot(range(y.shape[1]), y, labels=labels)
+    plt.axes('off')
+    plt.legend(labels)
+
+    for group in s:
+        group.set_visible(False)
+
     plt.show()
 
 
@@ -64,21 +63,21 @@ def compare_features(query_vid_obj, db_vid_obj):
 
     for key in query_vid_obj.features.keys():
         # print('Comparing', key)
+        q = query_vid_obj.features[key]
+        d = db_vid_obj.features[key]
         if 'brightness' in key:
-            q = query_vid_obj.features[key]
-            d = db_vid_obj.features[key]
+            ccoeff[key] = similarity_score(q, d)
 
-            ccoeff[key] = ccoeff_1d(q, d)
         elif 'perceptual_hash' in key:
-            q = query_vid_obj.features[key]
-            d = db_vid_obj.features[key]
+            ccoeff[key] = similarity_score(q, d, '2d_hamm')
 
-            ccoeff[key] = ccoeff_1d(q, d, '2d_hamm')
+        elif 'blockmotion' in key:
+            ccoeff[key] = similarity_score(q, d, '2d_norm')
 
     return ccoeff
 
 
-def ccoeff_1d(x, y, method='1d_norm'):
+def similarity_score(x, y, method='1d_norm'):
     window_size = x.shape[0]
     sim_metric_len = y.shape[0] - window_size
 

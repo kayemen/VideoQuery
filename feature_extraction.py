@@ -6,6 +6,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import imagehash as imhash
+from skvideo.motion import blockMotion
 from PIL import Image
 
 import config
@@ -17,7 +18,8 @@ def extract_features(vid_obj, feature_list=()):
     available_features = [
         'brightness_profile',
         # 'audio_spectrogram',
-        'frame_perceptive_hash'
+        'frame_perceptive_hash',
+        'video_motion_vecs'
     ]
     if len(set(feature_list).intersection(set(available_features))) == 0:
         # all_ = True
@@ -52,7 +54,19 @@ def extract_features(vid_obj, feature_list=()):
         vid_obj.features['perceptual_hash_dhhash'] = dh_h
         vid_obj.features['perceptual_hash_dvhash'] = dh_v
 
-    # plt.show()
+    if 'video_motion_vecs' in feature_list:
+        # print('here')
+        bm = blockMotion(
+            np.asarray(vid_obj.frames),
+            mbSize=config.BM_MACROBLOCK_SIZE,
+            p=config.BM_DISTANCE
+        )
+        vid_obj.features['blockmotion_vecs_x'] = bm[:, :, :, 1]
+        vid_obj.features['blockmotion_vecs_y'] = bm[:, :, :, 0]
+        # code.interact(local=locals())
+        # plt.imshow(bm)
+        # plt.show()
+        # plt.show()
 
 
 def video_brightness_profile(frames):
@@ -137,8 +151,8 @@ if __name__ == '__main__':
     # while choice not in range(1, len(folders)+1):
     #     choice = int(input('Select folder:'))
 
-    # for choice in range(1, 2):
-    for choice in range(1, len(folders)+1):
+    # for choice in range(1, len(folders)+1):
+    for choice in range(1, 2):
         tic = time.time()
         selected_folder = folders[choice-1]
         print(selected_folder)
@@ -147,7 +161,8 @@ if __name__ == '__main__':
         aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
         v = Video(vid_path, aud_path)
 
-        extract_features(v, ('frame_perceptive_hash', ))
+        extract_features(v, ('video_motion_vecs', ))
         print('Time taken', time.time()-tic)
+        code.interact(local=locals())
     # plt.show()
     # code.interact(local=locals())

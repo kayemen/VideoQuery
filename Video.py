@@ -68,9 +68,16 @@ class Video(object):
         self.audioframes_per_videoframe = self.audio_rate // self.fps
         # print(self.audioframes_per_videoframe)
         if not (self.num_audio_frames // self.audioframes_per_videoframe == self.num_video_frames):
-            print("Insufficient audio frames. Padding with 0 at end")
+            num_pad_frames = self.num_video_frames * \
+                self.audioframes_per_videoframe - self.num_audio_frames
+            print(
+                "Insufficient audio frames. Padding with 0 at end: %d samples" % num_pad_frames)
             print("Length of audio", self.num_audio_frames/self.audio_rate)
             print("Length of video", self.num_video_frames/self.fps)
+
+            self.audio = self.audio + bytes(
+                num_pad_frames
+            )
 
     def get_video_frame(self, frame_no):
         f = max(0, min(frame_no, self.num_video_frames-1))
@@ -91,6 +98,23 @@ class Video(object):
         # print(len(buffer_data))
 
         return self.audio[f_start: f_end] + buffer_data
+
+    def get_processed_audio(self, frame_no, channel):
+        if channel >= self.audio_channels or channel < 0:
+            raise Exception('Invalid channel number')
+
+        f_start = frame_no * self.audioframes_per_videoframe
+        f_end = f_start + self.audioframes_per_videoframe
+
+        f_start = max(0, min(f_start, self.num_audio_frames))
+        f_end = max(0, min(f_end, self.num_audio_frames))
+
+        f_start = f_start * self.audio_width * self.audio_channels
+        f_end = f_end * self.audio_width * self.audio_channels
+
+        raw_audio = self.audio[f_start: f_end]
+
+        code.interact(local=locals())
 
 
 if __name__ == '__main__':

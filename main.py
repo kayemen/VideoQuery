@@ -3,6 +3,7 @@ import glob
 import pickle
 import code
 import tkinter as tk
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,19 +31,26 @@ for selected_folder in folders:
     print(selected_folder)
     pkl_path = glob.glob(os.path.join(selected_folder, '*.pkl'))
     if len(pkl_path) and not FORCE_CREATE:
+        tic = time.time()
         print('Loading pre-calculated features')
         with open(pkl_path[0], 'rb') as pkl_fp:
             v = pickle.load(pkl_fp)
+        print('Loaded in %0.4fs' % (time.time()-tic))
     else:
+        tic = time.time()
         print('Loading video')
         vid_path = selected_folder
         aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
         v = Video(vid_path, aud_path)
+        print('Loaded in %0.4fs' % (time.time()-tic))
 
         # Computing features
+        tic = time.time()
         print('Calculating video features')
         extract_features(v)
+        print('Calculated in %0.4fs' % (time.time()-tic))
 
+        print('Saving results to database')
         with open(os.path.join(selected_folder, '%s.pkl' % v.name), 'wb') as pkl_fp:
             pickle.dump(v, pkl_fp)
     db_vids.append(v)
@@ -57,17 +65,27 @@ print('-'*80)
 print('\n'.join(['%d. %s' % (i+1, f) for (i, f) in enumerate(folders)]))
 print('='*80)
 
-choice = 2
+choice = -1
 while choice not in range(1, len(folders)+1):
     choice = int(input('Select folder:'))
 
 selected_folder = folders[choice-1]
 vid_path = selected_folder
 aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
-query_vid = Video(vid_path, aud_path)
-extract_features(query_vid)
 
-# code.interact(local=locals())
+# Loading query video
+tic = time.time()
+print('Loading video')
+query_vid = Video(vid_path, aud_path)
+print('Loaded in %0.4fs' % (time.time()-tic))
+
+# Computing features
+tic = time.time()
+print('Calculating video features')
+extract_features(query_vid)
+print('Calculated in %0.4fs' % (time.time()-tic))
+
+code.interact(local=locals())
 
 query_scores = {}
 for i, db_vid in enumerate(db_vids[:]):
@@ -75,6 +93,7 @@ for i, db_vid in enumerate(db_vids[:]):
 final_ranks = rank_features(query_scores)
 generate_plots(final_ranks)
 
+code.interact(local=locals())
 
 # root = tk.Tk()
 # player = VideoPlayer(root, query_vid)
