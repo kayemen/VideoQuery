@@ -74,6 +74,10 @@ def compare_features(query_vid_obj, db_vid_obj):
         elif 'blockmotion' in key:
             ccoeff[key] = similarity_score(q, d, '2d_norm')
 
+        elif 'audio_spectral_profile' in key:
+            ccoeff[key] = similarity_score(q, d, '2d_spectral')
+
+
     return ccoeff
 
 
@@ -96,7 +100,7 @@ def similarity_score(x, y, method='1d_norm'):
 
         sim_metric = (sim_metric - np.min(sim_metric))
 
-    if method == '2d_norm':
+    elif method == '2d_norm':
         # Compute 2D sliding window metric with normalized correlation
         try:
             X = x - np.mean(x)
@@ -112,7 +116,23 @@ def similarity_score(x, y, method='1d_norm'):
         except:
             code.interact(local=locals())
 
-    if method == '2d_hamm':
+    elif method == '2d_spectral':
+        # Compute 2D sliding window metric with normalized correlation
+        try:
+            X = x - np.mean(x)
+            for start in range(0, sim_metric_len):
+
+                Y = y[start:start+window_size, :, :] - \
+                    np.mean(y[start:start+window_size, :, :])
+
+                sim_metric[start] = np.sum(
+                    X*Y) / np.sqrt(np.sum(X**2) * np.sum(Y**2))
+
+            sim_metric = (sim_metric - np.min(sim_metric))
+        except:
+            code.interact(local=locals())
+
+    elif method == '2d_hamm':
         # Compute 2D sliding window metric with hamming distance
         try:
             X = x - np.mean(x)
