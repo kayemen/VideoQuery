@@ -16,7 +16,7 @@ from feature_comparison import compare_features, rank_features, generate_plots
 
 
 # LOAD DATABASE VIDEOS
-FORCE_CREATE = False
+FORCE_CREATE = True
 
 folders = [x[0]
            for x in os.walk(config.DB_VID_ROOT)][1:]

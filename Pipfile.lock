@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d956a80ec3fce3a366e9c68a3365e3a6f305e9c62e650870b97d49885403f892"
+            "sha256": "ded4de224ac542502ba21cb465e5440a88d11f46f1afc4f747d2b29c629eaa83"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -204,6 +204,13 @@
             ],
             "index": "pypi",
             "version": "==5.0.0"
+        },
+        "pipfile": {
+            "hashes": [
+                "sha256:f7d9f15de8b660986557eb3cc5391aa1a16207ac41bc378d03f414762d36c984"
+            ],
+            "index": "pypi",
+            "version": "==0.0.2"
         },
         "pyaudio": {
             "hashes": [
@@ -410,6 +417,12 @@
             ],
             "index": "pypi",
             "version": "==1.2.7"
+        },
+        "toml": {
+            "hashes": [
+                "sha256:8e86bd6ce8cc11b9620cb637466453d94f5d57ad86f17e98a98d1f73e3baab2d"
+            ],
+            "version": "==0.9.4"
         },
         "urllib3": {
             "hashes": [
