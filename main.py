@@ -16,7 +16,7 @@ from feature_comparison import compare_features, rank_features, generate_plots
 
 
 # LOAD DATABASE VIDEOS
-FORCE_CREATE = True
+FORCE_CREATE = False
 
 folders = [x[0]
            for x in os.walk(config.DB_VID_ROOT)][1:]
@@ -65,35 +65,72 @@ print('-'*80)
 print('\n'.join(['%d. %s' % (i+1, f) for (i, f) in enumerate(folders)]))
 print('='*80)
 
-choice = -1
-while choice not in range(1, len(folders)+1):
-    choice = int(input('Select folder:'))
+# choice = -1
+#     try:
+#         choice = int(input('Select folder:'))
+#     except:
+#         choice = -1
 
-selected_folder = folders[choice-1]
-vid_path = selected_folder
-aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
 
-# Loading query video
-tic = time.time()
-print('Loading video')
-query_vid = Video(vid_path, aud_path)
-print('Loaded in %0.4fs' % (time.time()-tic))
+for choice in range(1, len(folders)+1):
+    selected_folder = folders[choice-1]
 
-# Computing features
-tic = time.time()
-print('Calculating video features')
-extract_features(query_vid)
-print('Calculated in %0.4fs' % (time.time()-tic))
+    pkl_path = glob.glob(os.path.join(selected_folder, 'query_scores.pkl'))
 
-code.interact(local=locals())
+    if len(pkl_path) and not FORCE_CREATE:
+        tic = time.time()
+        print('Loading pre-calculated comparison metrics')
+        with open(pkl_path[0], 'rb') as pkl_fp:
+            query_scores = pickle.load(pkl_fp)
+        print('Loaded in %0.4fs' % (time.time()-tic))
+    else:
+        pkl_path = [pth for pth in glob.glob(os.path.join(
+            selected_folder, '*.pkl')) if not os.path.basename(pth).startswith('query_scores')]
 
-query_scores = {}
-for i, db_vid in enumerate(db_vids[:]):
-    query_scores[db_vid.name] = compare_features(query_vid, db_vid)
-final_ranks = rank_features(query_scores)
-generate_plots(final_ranks)
+        if len(pkl_path) and not FORCE_CREATE:
+            tic = time.time()
+            print('Loading pre-calculated features')
+            with open(pkl_path[0], 'rb') as pkl_fp:
+                query_vid = pickle.load(pkl_fp)
+            print('Loaded in %0.4fs' % (time.time()-tic))
+        else:
+            # Loading query video
+            tic = time.time()
+            vid_path = selected_folder
+            aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
+            print('Loading video %s' % os.path.basename(vid_path))
+            query_vid = Video(vid_path, aud_path)
+            print('Loaded in %0.4fs' % (time.time()-tic))
 
-code.interact(local=locals())
+            # Computing features
+            tic = time.time()
+            print('Calculating video features')
+            extract_features(query_vid)
+            print('Calculated in %0.4fs' % (time.time()-tic))
+
+            print('Caching query')
+            with open(os.path.join(selected_folder, '%s.pkl' % query_vid.name), 'wb') as pkl_fp:
+                pickle.dump(query_vid, pkl_fp)
+        # code.interact(local=locals())
+
+        # Computing featurewise scores
+        query_scores = {}
+        for i, db_vid in enumerate(db_vids[:]):
+            print('Comparing features with %s' % db_vid.name)
+            tic = time.time()
+            query_scores[db_vid.name] = compare_features(query_vid, db_vid)
+            print('Feature comparison completed in %0.4fs' % (time.time()-tic))
+
+        print('Saving results to database')
+        with open(os.path.join(selected_folder, 'query_scores.pkl'), 'wb') as pkl_fp:
+            pickle.dump(query_scores, pkl_fp)
+
+    # Final ranking and plotting
+    final_ranks = rank_features(query_scores)
+    generate_plots(final_ranks, title=os.path.basename(selected_folder))
+plt.show()
+
+# code.interact(local=locals())
 
 # root = tk.Tk()
 # player = VideoPlayer(root, query_vid)

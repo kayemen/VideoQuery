@@ -45,7 +45,7 @@ def extract_features(vid_obj, feature_list=()):
         vid_obj.features['brightness_profile_b'] = b
 
     if 'audio_spectrogram' in feature_list:
-        Pxx=audio_spectral_profile(vid_obj.audio,vid_obj.num_audio_frames)
+        Pxx = audio_spectral_profile(vid_obj.audio, vid_obj.num_audio_frames)
         vid_obj.features['audio_spectral_profile'] = np.asarray(Pxx)
 
     if 'frame_perceptive_hash' in feature_list:
@@ -140,21 +140,23 @@ def audio_spectral_profile(audio_frames, num_audio_frames):
     # num_audio_frames=len(audio_frames)/4
     audio_concat = [None]*num_audio_frames*2
     audio_mono = [None]*num_audio_frames
-    for i in range (0,len(audio_frames)-1,2):
-        audio_concat[int(i/2)]=(audio_frames[i]*256)+(audio_frames[i+1])
-    audio_concat = np.asarray(audio_concat)
+    # for i in range (0,len(audio_frames)-1,2):
+    #     audio_concat[int(i/2)]=(audio_frames[i]*256)+(audio_frames[i+1])
+    audio_concat = np.frombuffer(audio_frames, dtype=np.dtype('>u2'))
+    # audio_concat = np.asarray(audio_concat)
     audio_mono = (audio_concat[0::2] + audio_concat[1::2])/2
-    Pxx=[]
-    
-    for x in range (0,len(audio_mono)-44100,1470):
-        v1,v2=signal.welch(audio_mono[x:(44100+x)],fs=44100,nperseg=44100)
+    Pxx = []
 
-        v2[np.where(v1<20)] = 0
-        v2[np.where(v1>20000)] = 0
+    for x in range(0, len(audio_mono)-44100, 1470):
+        v1, v2 = signal.welch(audio_mono[x:(44100+x)], fs=44100, nperseg=44100)
 
-        # f.append(v1)
+        v2[np.where(v1 < 20)] = 0
+        v2[np.where(v1 > 20000)] = 0
+
+        # fz.append(v1)
         Pxx.append(v2)
     return Pxx
+
 
 if __name__ == '__main__':
     folders = [x[0]

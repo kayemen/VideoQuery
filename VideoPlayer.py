@@ -31,17 +31,6 @@ class VideoPlayer(tk.Frame):
 
         self.video_obj = video_obj
 
-        self.pyaudio_inst = pyaudio.PyAudio()
-        self.audio_stream = self.pyaudio_inst.open(
-            format=self.pyaudio_inst.get_format_from_width(
-                self.video_obj.audio_width),
-            channels=self.video_obj.audio_channels,
-            rate=self.video_obj.audio_rate,
-            frames_per_buffer=video_obj.audioframes_per_videoframe,
-            output=True,
-            stream_callback=self.play_audio_frame
-        )
-
         self.init_frame = np.zeros(
             (
                 config.FRAME_DIM[1],
@@ -100,9 +89,6 @@ class VideoPlayer(tk.Frame):
         self.videoBuffer = Queue(maxsize=2)
         self.audioBuffer = Queue(maxsize=2)
 
-        self.bufferingThread = threading.Thread(target=self.buffer_frame_data)
-        self.renderingThread = threading.Thread(target=self.play_video_frame)
-
         self.stop_buffering = threading.Event()
         self.stop_rendering = threading.Event()
 
@@ -111,7 +97,21 @@ class VideoPlayer(tk.Frame):
 
         self.delay = self.video_obj.frame_delay
 
+        self.pyaudio_inst = pyaudio.PyAudio()
+        self.audio_stream = self.pyaudio_inst.open(
+            format=self.pyaudio_inst.get_format_from_width(
+                self.video_obj.audio_width),
+            channels=self.video_obj.audio_channels,
+            rate=self.video_obj.audio_rate,
+            frames_per_buffer=video_obj.audioframes_per_videoframe,
+            output=True,
+            stream_callback=self.play_audio_frame
+        )
+
+        self.bufferingThread = threading.Thread(target=self.buffer_frame_data)
         self.bufferingThread.start()
+
+        self.renderingThread = threading.Thread(target=self.play_video_frame)
         self.renderingThread.start()
 
     def buffer_frame_data(self):

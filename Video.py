@@ -75,9 +75,9 @@ class Video(object):
             print("Length of audio", self.num_audio_frames/self.audio_rate)
             print("Length of video", self.num_video_frames/self.fps)
 
-            self.audio = self.audio + bytes(
-                num_pad_frames
-            )
+            # self.audio = self.audio + bytes(
+            #     num_pad_frames
+            # )
 
     def get_video_frame(self, frame_no):
         f = max(0, min(frame_no, self.num_video_frames-1))

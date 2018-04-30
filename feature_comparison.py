@@ -1,7 +1,10 @@
+import traceback
 import code
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import correlate
+from tqdm import tqdm
 
 import config
 
@@ -12,49 +15,60 @@ def rank_features(query_scores):
     i = 0
     scores = []
     for vid_name, feature_scores in query_scores.items():
-        labels = feature_scores.keys()
-        # weights = np.asarray([FEATURE_WEIGHTS.get(label, 1.0)
-        #   for label in labels])
-        y = np.asarray([np.asarray(feature_scores[i]) *
-                        config.FEATURE_WEIGHTS.get(i, config.DEFAULT_WEIGHT) for i in labels])
-        Y = np.sum(y, axis=0)
+        try:
+            labels = feature_scores.keys()
+            # weights = np.asarray([FEATURE_WEIGHTS.get(label, 1.0)
+            #   for label in labels])
+            lens = [len(feature_scores[i]) for i in labels]
+            max_len = max(lens)
+            # max_len = max([len(i) for i in combined_scores])
 
-        scores.append((vid_name, np.max(Y), y, Y, labels))
+            y = np.asarray([np.append(np.asarray(feature_scores[label]), np.zeros(max_len - lens[idx]))
+                            * config.FEATURE_WEIGHTS.get(label, config.DEFAULT_WEIGHT) for idx, label in enumerate(labels)])
+            Y = np.sum(y, axis=0)
+
+            scores.append((vid_name, np.max(Y), y, Y, labels))
+        except:
+            traceback.print_exc()
+            code.interact(local=locals())
 
     final_scores = sorted(scores, key=lambda x: x[1], reverse=True)
 
     return final_scores
 
 
-def generate_plots(final_scores):
+def generate_plots(final_scores, title):
     print([x[:2] for x in final_scores])
     for i, score in enumerate(final_scores):
         vid_name = score[0]
         y = score[2]
         Y = score[3]
         labels = score[4]
+        colors = [config.FEATURE_COLORS[label] for label in labels]
 
-        plt.figure(1)
+        plt.figure(title)
         plt.plot(range(Y.shape[0]), Y, label=vid_name)
 
-        plt.figure(2)
-        plt.subplot(3, 3, i + 1)
-        plt.ylim(0, 2)
-        plt.stackplot(range(y.shape[1]), y, labels=labels)
-        plt.title(vid_name)
+        # plt.figure(2)
+        # plt.subplot(3, 3, i + 1)
+        # plt.ylim(0, 2)
+        # plt.stackplot(range(y.shape[1]), y, labels=labels, colors=colors)
+        # plt.title(vid_name)
 
-    plt.figure(1)
+    plt.figure(title)
     plt.legend()
-    plt.figure(2)
-    plt.subplot(3, 3, 9)
-    s = plt.stackplot(range(y.shape[1]), y, labels=labels)
-    plt.axes('off')
-    plt.legend(labels)
+    plt.title(title)
+    # plt.figure(2)
+    # plt.subplot(3, 3, 9)
+    # s = plt.stackplot(range(y.shape[1]), np.zeros(
+    #     y.shape), labels=labels, colors=colors)
+    # plt.axes('off')
+    # plt.legend(labels)
 
-    for group in s:
-        group.set_visible(False)
+    # for group in s:
+    #     group.set_visible(False)
 
-    plt.show()
+    # plt.show()
 
 
 def compare_features(query_vid_obj, db_vid_obj):
@@ -68,15 +82,14 @@ def compare_features(query_vid_obj, db_vid_obj):
         if 'brightness' in key:
             ccoeff[key] = similarity_score(q, d)
 
-        elif 'perceptual_hash' in key:
+        if 'perceptual_hash' in key:
             ccoeff[key] = similarity_score(q, d, '2d_hamm')
 
-        elif 'blockmotion' in key:
+        if 'blockmotion' in key:
             ccoeff[key] = similarity_score(q, d, '2d_norm')
 
-        elif 'audio_spectral_profile' in key:
+        if 'audio_spectral_profile' in key:
             ccoeff[key] = similarity_score(q, d, '2d_spectral')
-
 
     return ccoeff
 
@@ -90,10 +103,13 @@ def similarity_score(x, y, method='1d_norm'):
     if method == '1d_norm':
         # Compute 1D sliding window metric with normalized correlation
         X = x - np.mean(x)
+        # X = X / np.max(np.abs(X))
         for start in range(0, sim_metric_len):
 
             Y = y[start:start+window_size] - \
                 np.mean(y[start:start+window_size])
+
+            # Y = Y / np.max(np.abs(Y))
 
             sim_metric[start] = np.sum(
                 X*Y) / np.sqrt(np.sum(X**2) * np.sum(Y**2))
@@ -114,22 +130,41 @@ def similarity_score(x, y, method='1d_norm'):
 
             sim_metric = (sim_metric - np.min(sim_metric))
         except:
+            print('Error in 2d_norm')
+            traceback.print_exc()
             code.interact(local=locals())
 
     elif method == '2d_spectral':
-        # Compute 2D sliding window metric with normalized correlation
+        # Compute 2D sliding window metric with normalized correlation, for each row individually
         try:
-            X = x - np.mean(x)
+            X = x - np.expand_dims(np.mean(x, axis=1), axis=1)
+            X = X / np.max(np.abs(X))
             for start in range(0, sim_metric_len):
 
-                Y = y[start:start+window_size, :, :] - \
-                    np.mean(y[start:start+window_size, :, :])
+                Y = y[start:start+window_size, :] - \
+                    np.expand_dims(
+                        np.mean(y[start:start+window_size, :], axis=1), axis=1)
 
-                sim_metric[start] = np.sum(
-                    X*Y) / np.sqrt(np.sum(X**2) * np.sum(Y**2))
+                Y = Y / np.max(np.abs(Y))
+
+                # code.interact(local=locals())
+                # sim_metric[start] = np.mean([
+                #     np.corrcoef(X[i, :], Y[i, :]) for i in range(X.shape[0])
+                # ]
+                # )
+                sim_metric[start] = np.mean(
+                    np.sum(X*Y, axis=1) /
+                    np.sqrt(np.sum(X**2, axis=1) * np.sum(Y**2, axis=1))
+                )
 
             sim_metric = (sim_metric - np.min(sim_metric))
+            # plt.plot(sim_metric)
+            # plt.show()
+            # code.interact(local=locals())
+            # print(sim_metric)
         except:
+            print('Error in 2d_spectral')
+            traceback.print_exc()
             code.interact(local=locals())
 
     elif method == '2d_hamm':
@@ -145,6 +180,8 @@ def similarity_score(x, y, method='1d_norm'):
 
             sim_metric = (sim_metric - np.min(sim_metric))
         except:
+            print('Error in 2d_hamm')
+            traceback.print_exc()
             code.interact(local=locals())
 
     return sim_metric
