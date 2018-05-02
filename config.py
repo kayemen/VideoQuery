@@ -5,6 +5,9 @@ import re
 import shutil
 import traceback
 
+# FLAGS
+USE_MULTIPROCESSING = False
+
 # Directories
 BASE_DIR = os.path.dirname(__file__)
 
@@ -23,32 +26,32 @@ BM_MACROBLOCK_SIZE = 16
 BM_DISTANCE = 5
 
 FEATURE_WEIGHTS = {
-    'brightness_profile_y': 0.1,
-    'brightness_profile_r': 0.05,
-    'brightness_profile_g': 0.05,
-    'brightness_profile_b': 0.05,
-    'perceptual_hash_ahash': 0,
+    'brightness_profile_y': 0.02,
+    'brightness_profile_r': 0.02,
+    'brightness_profile_g': 0.02,
+    'brightness_profile_b': 0.02,
+    'perceptual_hash_ahash': 1,
     'perceptual_hash_phash': 1,
-    'perceptual_hash_whash': 0,
-    'perceptual_hash_dhhash': 0,
-    'perceptual_hash_dvhash': 0,
-    'blockmotion_vecs_x': 1,
-    'blockmotion_vecs_y': 1,
-    'audio_spectral_profile': 0.1,
+    'perceptual_hash_whash': 1,
+    'perceptual_hash_dhhash': 1,
+    'perceptual_hash_dvhash': 1,
+    'blockmotion_vecs_x': 0.1,
+    'blockmotion_vecs_y': 0.2,
+    'audio_spectral_profile': 0.5,
 }
 
 FEATURE_COLORS = {
-    'brightness_profile_y': '#0000ff',
-    'brightness_profile_r': '#00007f',
-    'brightness_profile_g': '#00003f',
-    'brightness_profile_b': '#00001f',
-    'perceptual_hash_ahash': '#00ff00',
-    'perceptual_hash_phash': '#007f00',
-    'perceptual_hash_whash': '#003f00',
-    'perceptual_hash_dhhash': '#001f00',
-    'perceptual_hash_dvhash': '#000f00',
-    'blockmotion_vecs_x': '#ff0000',
-    'blockmotion_vecs_y': '#7f0000',
+    'brightness_profile_y': '#7f7f7f',
+    'brightness_profile_r': '#ff0000',
+    'brightness_profile_g': '#00ff00',
+    'brightness_profile_b': '#0000ff',
+    'perceptual_hash_ahash': '#7f7f00',
+    'perceptual_hash_phash': '#ffff00',
+    'perceptual_hash_whash': '#3f3f00',
+    'perceptual_hash_dhhash': '#373700',
+    'perceptual_hash_dvhash': '#777700',
+    'blockmotion_vecs_x': '#00ffff',
+    'blockmotion_vecs_y': '#007f7f',
     'audio_spectral_profile': '#ff00ff',
 }
 

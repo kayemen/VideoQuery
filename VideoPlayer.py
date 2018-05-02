@@ -3,8 +3,9 @@ import glob
 import time
 import datetime
 import threading
+import multiprocessing
 import tkinter as tk
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 import code
 import traceback
 
@@ -20,17 +21,16 @@ class VideoPlayer(tk.Frame):
     PLAY = 0
     PAUSE = 1
 
-    def __init__(self, master, video_obj):
+    def __init__(self, master, video_obj=None):
         super().__init__(master)
         self.master = master
-        self.pack()
+        # self.pack()
 
         # self.root = tk.Tk()
         # self.root.wm_title("Video Query")
         # self.root.overrideredirect(1)
 
-        self.video_obj = video_obj
-
+        self.state = self.PAUSE
         self.init_frame = np.zeros(
             (
                 config.FRAME_DIM[1],
@@ -46,10 +46,10 @@ class VideoPlayer(tk.Frame):
             )
         )
 
-        quit_btn = tk.Button(
-            self, text='QUIT',
-            command=self.onClose
-        )
+        # quit_btn = tk.Button(
+        #     self, text='QUIT',
+        #     command=self.onClose
+        # )
 
         self.panel = tk.Label(self, image=init_frame)
         self.panel.image = init_frame
@@ -59,70 +59,96 @@ class VideoPlayer(tk.Frame):
             self, text=u'\u23f8', command=self.play_pause
         )
 
-        # pause_btn = tk.Button(
-        #     self.root, text='PAUSE', command=self.pause
-        # )
-        # pause_btn.pack(side='right')
-
         stop_btn = tk.Button(
             self, text='\u23f9', command=self.stop
         )
 
-        # seek_btn = tk.Button(
-        #     self.root, text='RESET',
-        #     command=self.seek
-        # )
         self.seek_bar = tk.Scale(
-            self, from_=0, to=self.video_obj.num_video_frames,
+            self, from_=0, to=1,
             orient=tk.HORIZONTAL, command=self.seek, length=200,
             showvalue=0
         )
 
         self.time_label = tk.Label(self, text="--:--")
 
-        quit_btn.pack(side='top')
+        # quit_btn.pack(side='top')
         self.play_pause_btn.pack(side='left')
         stop_btn.pack(side='left')
         self.seek_bar.pack(side='left')
         self.time_label.pack(side='left')
 
-        self.videoBuffer = Queue(maxsize=2)
-        self.audioBuffer = Queue(maxsize=2)
-
-        self.stop_buffering = threading.Event()
-        self.stop_rendering = threading.Event()
-
+        self.video_obj = None
         self.frame_ptr = 0
-        self.state = self.PLAY
+
+        # if config.USE_MULTIPROCESSING:
+        if False:
+            self.videoBuffer = multiprocessing.Queue(maxsize=2)
+            self.audioBuffer = multiprocessing.Queue(maxsize=2)
+
+            self.stop_buffering = multiprocessing.Event()
+            self.stop_rendering = multiprocessing.Event()
+
+            self.bufferingThread = multiprocessing.Process(
+                target=self.buffer_frame_data)
+            self.bufferingThread.start()
+
+            self.renderingThread = multiprocessing.Process(
+                target=self.play_video_frame)
+            self.renderingThread.start()
+        else:
+            self.videoBuffer = Queue(maxsize=2)
+            self.audioBuffer = Queue(maxsize=2)
+
+            self.stop_buffering = threading.Event()
+            self.stop_rendering = threading.Event()
+
+            self.bufferingThread = threading.Thread(
+                target=self.buffer_frame_data)
+            self.bufferingThread.start()
+
+            self.renderingThread = threading.Thread(
+                target=self.play_video_frame)
+            self.renderingThread.start()
+
+        self.stop()
+        if video_obj is not None:
+            self.load_video(video_obj)
+
+    def load_video(self, video_obj):
+        self.stop()
+        self.video_obj = video_obj
+        self.seek_bar.config(to=self.video_obj.num_video_frames)
 
         self.delay = self.video_obj.frame_delay
 
-        self.pyaudio_inst = pyaudio.PyAudio()
-        self.audio_stream = self.pyaudio_inst.open(
-            format=self.pyaudio_inst.get_format_from_width(
-                self.video_obj.audio_width),
-            channels=self.video_obj.audio_channels,
-            rate=self.video_obj.audio_rate,
-            frames_per_buffer=video_obj.audioframes_per_videoframe,
-            output=True,
-            stream_callback=self.play_audio_frame
-        )
-
-        self.bufferingThread = threading.Thread(target=self.buffer_frame_data)
-        self.bufferingThread.start()
-
-        self.renderingThread = threading.Thread(target=self.play_video_frame)
-        self.renderingThread.start()
+        # self.pyaudio_inst = pyaudio.PyAudio()
+        # self.audio_stream = self.pyaudio_inst.open(
+        #     format=self.pyaudio_inst.get_format_from_width(
+        #         self.video_obj.audio_width),
+        #     channels=self.video_obj.audio_channels,
+        #     rate=self.video_obj.audio_rate,
+        #     frames_per_buffer=video_obj.audioframes_per_videoframe,
+        #     output=True,
+        #     stream_callback=self.play_audio_frame
+        # )
+        # self.audio_stream.start_stream()
 
     def buffer_frame_data(self):
+        tic = time.time()
         while not self.stop_buffering.is_set():
             if self.state == self.PLAY:
                 vid_frame = self.video_obj.get_video_frame(self.frame_ptr)
                 aud_frame = self.video_obj.get_audio_frame(self.frame_ptr)
-                self.videoBuffer.put(vid_frame)
-                self.audioBuffer.put(aud_frame)
+                try:
+                    self.videoBuffer.put(vid_frame, block=False)
+                    self.audioBuffer.put(aud_frame, block=False)
+                except Full:
+                    pass
+                    # print('Buffer full')
 
                 # Change to mod to loop video
+                # self.frame_ptr = (
+                #     self.frame_ptr + 1) % self.video_obj.num_video_frames
                 self.frame_ptr = self.frame_ptr + 1
                 if not self.stop_buffering.is_set():
                     self.seek_bar.set(self.frame_ptr)
@@ -133,26 +159,35 @@ class VideoPlayer(tk.Frame):
                     self.time_label.config(text=time_str)
                 if self.frame_ptr == self.video_obj.num_video_frames:
                     self.state = self.PAUSE
+
+                toc = time.time()
+                delay = max(0, self.delay - (toc - tic))
+                time.sleep(delay)
+                tic = time.time()
+
+            else:
+                if self.stop_buffering.is_set():
+                    break
         print('Stopping buffering thread')
 
     def play_video_frame(self):
-        tic = time.time()
         while not self.stop_rendering.is_set():
             if self.state == self.PAUSE:
-                pass
+                try:
+                    self.videoBuffer.get(block=False)
+                except Empty:
+                    pass
+                if self.stop_rendering.is_set():
+                    break
             else:
                 # Read queue and render
                 try:
-                    frame = self.videoBuffer.get(timeout=0.1)
+                    frame = self.videoBuffer.get(block=False)
                     # print('rendering to screen')
                     self.draw_video_frame(frame)
                     # print('rendered')
                 except Empty:
                     pass
-                toc = time.time()
-                delay = max(0, self.delay - (toc - tic))
-                time.sleep(delay)
-                tic = time.time()
                 # stop_flag = self.stop_rendering.wait(delay)
                 # print(delay)
         print('stopping rendering')
@@ -168,17 +203,19 @@ class VideoPlayer(tk.Frame):
     def play_audio_frame(self, in_data, frame_count, time_info, status):
         try:
             if self.state == self.PAUSE:
+                self.audioBuffer.get(block=False)
                 data = bytes(
                     frame_count * self.video_obj.audio_channels * self.video_obj.audio_width
                 )
                 return (data, pyaudio.paContinue)
-            try:
-                data = self.audioBuffer.get(timeout=0.1)
-            except Empty:
-                data = bytes(
-                    frame_count * self.video_obj.audio_channels * self.video_obj.audio_width
-                )
-            return (data, pyaudio.paContinue)
+            else:
+                try:
+                    data = self.audioBuffer.get(block=False)
+                except Empty:
+                    data = bytes(
+                        frame_count * self.video_obj.audio_channels * self.video_obj.audio_width
+                    )
+                return (data, pyaudio.paContinue)
         except:
             traceback.print_exc()
             data = bytes(1)
@@ -222,8 +259,8 @@ class VideoPlayer(tk.Frame):
         print('Joining rendering thread')
         self.renderingThread.join()
         print('Render thread complete')
-        self.master.quit()
-        # self.master.destroy()
+        # self.audio_stream.stop_stream()
+        # self.audio_stream.close()
 
 
 if __name__ == '__main__':
@@ -247,9 +284,18 @@ if __name__ == '__main__':
     v = Video(vid_path, aud_path)
     root = tk.Tk()
     player = VideoPlayer(root, v)
+    player.pack()
+
+    def close():
+        player.onClose()
+        root.quit()
+
+    def timer():
+        while True:
+            print(time.time())
 
     root.wm_title("Video Player")
-    root.wm_protocol("WM_DELETE_WINDOW", player.onClose)
+    root.wm_protocol("WM_DELETE_WINDOW", close)
     try:
         root.mainloop()
     except:

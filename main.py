@@ -72,8 +72,12 @@ print('='*80)
 #         choice = -1
 
 
+# for choice in range(1, 2):
 for choice in range(1, len(folders)+1):
     selected_folder = folders[choice-1]
+
+    # if os.path.basename(selected_folder).startswith('subclip'):
+    #     continue
 
     pkl_path = glob.glob(os.path.join(selected_folder, 'query_scores.pkl'))
 
@@ -127,7 +131,9 @@ for choice in range(1, len(folders)+1):
 
     # Final ranking and plotting
     final_ranks = rank_features(query_scores)
-    generate_plots(final_ranks, title=os.path.basename(selected_folder))
+    generate_plots(final_ranks, title=os.path.basename(
+        selected_folder), save_location=selected_folder)
+# code.interact(local=locals())
 plt.show()
 
 # code.interact(local=locals())

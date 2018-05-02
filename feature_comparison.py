@@ -1,5 +1,6 @@
 import traceback
 import code
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,10 +25,11 @@ def rank_features(query_scores):
             # max_len = max([len(i) for i in combined_scores])
 
             y = np.asarray([np.append(np.asarray(feature_scores[label]), np.zeros(max_len - lens[idx]))
-                            * config.FEATURE_WEIGHTS.get(label, config.DEFAULT_WEIGHT) for idx, label in enumerate(labels)])
+                            * config.FEATURE_WEIGHTS.get(label, config.DEFAULT_WEIGHT) for idx, label in enumerate(labels) if config.FEATURE_WEIGHTS.get(label, config.DEFAULT_WEIGHT) > 0])
             Y = np.sum(y, axis=0)
 
-            scores.append((vid_name, np.max(Y), y, Y, labels))
+            scores.append((vid_name, np.max(Y), y, Y, [
+                          label for label in labels if config.FEATURE_WEIGHTS.get(label, config.DEFAULT_WEIGHT) > 0]))
         except:
             traceback.print_exc()
             code.interact(local=locals())
@@ -37,8 +39,9 @@ def rank_features(query_scores):
     return final_scores
 
 
-def generate_plots(final_scores, title):
-    print([x[:2] for x in final_scores])
+def generate_plots(final_scores, title, save_location=None):
+    [print(x[:2]) for x in final_scores]
+    stack_ylim = max([np.max(score[3]) for score in final_scores])
     for i, score in enumerate(final_scores):
         vid_name = score[0]
         y = score[2]
@@ -46,28 +49,38 @@ def generate_plots(final_scores, title):
         labels = score[4]
         colors = [config.FEATURE_COLORS[label] for label in labels]
 
-        plt.figure(title)
+        plt.figure(title+'_stacked', figsize=(12, 12))
         plt.plot(range(Y.shape[0]), Y, label=vid_name)
 
-        # plt.figure(2)
-        # plt.subplot(3, 3, i + 1)
-        # plt.ylim(0, 2)
-        # plt.stackplot(range(y.shape[1]), y, labels=labels, colors=colors)
-        # plt.title(vid_name)
+        plt.figure(title+'_comparison', figsize=(12, 12))
+        plt.subplot(3, 3, i + 1)
+        plt.ylim(0, stack_ylim)
+        plt.xticks([])
+        plt.stackplot(range(y.shape[1]), y, labels=labels, colors=colors)
+        plt.title(vid_name)
 
-    plt.figure(title)
+    plt.figure(title+'_stacked')
     plt.legend()
     plt.title(title)
-    # plt.figure(2)
-    # plt.subplot(3, 3, 9)
-    # s = plt.stackplot(range(y.shape[1]), np.zeros(
-    #     y.shape), labels=labels, colors=colors)
-    # plt.axes('off')
-    # plt.legend(labels)
+    if save_location is not None:
+        plt.savefig(os.path.join(save_location, title+'_stacked.png'), dpi=600)
 
-    # for group in s:
-    #     group.set_visible(False)
+    f = plt.figure(title+'_comparison')
+    f.tight_layout()
+    axarr = plt.subplot(3, 3, 9)
+    s = plt.stackplot(range(y.shape[1]), np.zeros(
+        y.shape), labels=labels, colors=colors)
+    axarr.set_axis_off()
+    f.subplots_adjust(top=0.9)
+    f.suptitle(title)
+    plt.legend(labels, ncol=2)
 
+    for group in s:
+        group.set_visible(False)
+
+    if save_location is not None:
+        plt.savefig(os.path.join(save_location,
+                                 title+'_comparison.png'), dpi=600)
     # plt.show()
 
 
