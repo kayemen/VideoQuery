@@ -122,9 +122,10 @@ class VideoQueryGUI(tk.Frame):
 
         self.info_text = tk.StringVar()
         self.info_text.set('STATUS')
-        self.info_label = tk.Label(self.frame2, textvar=self.info_text)
+        self.info_label = tk.Label(
+            self.frame2, textvar=self.info_text, justify=tk.LEFT, background='green')
         # self.info_label = tk.Label(self.frame2, text='')
-        self.info_label.grid(row=0, column=0)
+        self.info_label.grid(row=0, column=0, stick='nswe')
 
         self.corr_curve_label = tk.Label(self.frame2, text='')
         self.corr_curve_label.config(background='yellow')
@@ -135,16 +136,16 @@ class VideoQueryGUI(tk.Frame):
         self.frame2.grid_columnconfigure(1, weight=1)
 
         # End frame - Video players
-        self.frame3 = tk.LabelFrame(
-            self.master, text='', relief=tk.RAISED,
-            height=200
-        )
-        self.frame3.pack(side='top', expand=True, fill='both')
+        # self.frame3 = tk.LabelFrame(
+        #     self.master, text='', relief=tk.RAISED,
+        #     height=200
+        # )
+        # self.frame3.pack(side='top', expand=True, fill='both')
 
-        self.query_player = VideoPlayer(self.frame3)
-        self.query_player.grid(row=0, column=0, stick='nsw')
-        self.db_player = VideoPlayer(self.frame3)
-        self.db_player.grid(row=0, column=1, stick='nse')
+        self.query_player = VideoPlayer(self.frame2)
+        self.query_player.grid(row=1, column=0, stick='nsw')
+        self.db_player = VideoPlayer(self.frame2)
+        self.db_player.grid(row=1, column=1, stick='nse')
 
         # self.poll_match_list()
 
@@ -259,6 +260,9 @@ class VideoQueryGUI(tk.Frame):
             status_text = 'STATUS:\n%s' % text
         else:
             status_text = '%s\n%s' % (self.info_text.get(), text)
+        lines = status_text.split('\n')
+        if len(lines) > 6:
+            status_text = '\n'.join([lines[0]]+lines[-5:])
         self.info_text.set(status_text)
 
     def poll_match_list(self, event=None):
