@@ -6,6 +6,7 @@ http://ieeexplore.ieee.org/document/5734750/
 Image perceptual hashes-
 https://pypi.python.org/pypi/ImageHash
 http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html
+https://www.safaribooksonline.com/blog/2013/11/26/image-hashing-with-python/
 
 
 Motion vector - 
