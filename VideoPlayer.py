@@ -96,8 +96,8 @@ class VideoPlayer(tk.Frame):
                 target=self.play_video_frame)
             self.renderingThread.start()
         else:
-            self.videoBuffer = Queue(maxsize=2)
-            self.audioBuffer = Queue(maxsize=2)
+            self.videoBuffer = Queue(maxsize=10)
+            self.audioBuffer = Queue(maxsize=10)
 
             self.stop_buffering = threading.Event()
             self.stop_rendering = threading.Event()
@@ -112,10 +112,12 @@ class VideoPlayer(tk.Frame):
 
             self.audio_stream = None
         self.stop()
-        if video_obj is not None:
-            self.load_video(video_obj)
+        self.load_video(video_obj)
+        # if video_obj is not None:
 
-    def load_video(self, video_obj):
+    def load_video(self, video_obj=None):
+        if video_obj is None:
+            return
         self.stop()
         self.video_obj = video_obj
         self.seek_bar.config(to=self.video_obj.num_video_frames)
@@ -140,16 +142,18 @@ class VideoPlayer(tk.Frame):
     def buffer_frame_data(self):
         tic = time.time()
         while not self.stop_buffering.is_set():
+            # This line is magic. DO NOT REMOVE. SYNC BREAKS
+            print('')
             if self.state == self.PLAY:
                 vid_frame = self.video_obj.get_video_frame(self.frame_ptr)
                 aud_frame = self.video_obj.get_audio_frame(self.frame_ptr)
                 try:
-                    print(self.video_obj.name, 'buffering')
+                    # print(self.video_obj.name, 'buffering')
                     self.videoBuffer.put(
                         vid_frame, block=False)
                     self.audioBuffer.put(
                         aud_frame, block=False)
-                    print(self.video_obj.name, 'buffered')
+                    # print(self.video_obj.name, 'buffered')
                     # Change to mod to loop video
                     self.frame_ptr = (
                         self.frame_ptr + 1) % self.video_obj.num_video_frames
@@ -180,6 +184,9 @@ class VideoPlayer(tk.Frame):
 
     def play_video_frame(self):
         while not self.stop_rendering.is_set():
+            # This line is magic. DO NOT REMOVE. SYNC BREAKS
+            print('')
+            # tic = time.time()
             if self.state == self.PAUSE:
                 try:
                     self.videoBuffer.get(block=False)
@@ -191,7 +198,7 @@ class VideoPlayer(tk.Frame):
                 # Read queue and render
                 try:
                     frame = self.videoBuffer.get(block=False)
-                    print('buffer emptied')
+                    # print('buffer emptied')
                     # print('rendering to screen')
                     self.draw_video_frame(frame)
                     # print('rendered')
@@ -199,6 +206,7 @@ class VideoPlayer(tk.Frame):
                     pass
                 # stop_flag = self.stop_rendering.wait(delay)
                 # print(delay)
+            # print(time.time() - tic)
         print('stopping rendering')
 
     def draw_video_frame(self, frame):
@@ -259,20 +267,21 @@ class VideoPlayer(tk.Frame):
     def onClose(self):
         self.state = self.PAUSE
         self.stop_buffering.set()
-        while not self.videoBuffer.empty():
-            self.videoBuffer.get()
-        while not self.audioBuffer.empty():
-            self.audioBuffer.get()
+        self.stop_rendering.set()
+        # while not self.videoBuffer.empty():
+        #     self.videoBuffer.get()
+        # while not self.audioBuffer.empty():
+        #     self.audioBuffer.get()
         print('Joining buffering thread')
         self.bufferingThread.join()
         print('Buffer thread complete')
 
-        self.stop_rendering.set()
         print('Joining rendering thread')
         self.renderingThread.join()
         print('Render thread complete')
-        self.audio_stream.stop_stream()
-        self.audio_stream.close()
+        if self.audio_stream is not None:
+            self.audio_stream.stop_stream()
+            self.audio_stream.close()
 
 
 if __name__ == '__main__':
