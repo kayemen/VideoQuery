@@ -5,31 +5,40 @@ import pickle
 import code
 import threading
 import tkinter as tk
-from tkinter.filedialog import askdirectory
+from tkinter.filedialog import askdirectory, askopenfilename
 # from tkinter import ttk
 
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image, ImageTk
+from skimage.transform import resize
+import matplotlib
+
+# matplotlib.use('agg')
 
 import config
 from Video import Video
 from VideoPlayer import VideoPlayer
 from feature_extraction import extract_features
-from feature_comparison import compare_features, rank_features, generate_plots
+from feature_comparison import compare_features, rank_features, generate_plots, generate_plot
 
 
 class VideoQueryGUI(tk.Frame):
     FORCE_CREATE = False
 
     def __init__(self, master):
+        super(VideoQueryGUI, self).__init__()
         self.master = master
         master.title("CSCI 576 Project - Video Query System")
-        master.wm_title("Video Player")
+        # master.wm_title("Video Player")
         master.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 
         self.folders = [x[0]
                         for x in os.walk(config.DB_VID_ROOT)][1:]
         self.query_scores = None
+
+        self.corr_plot = np.ones((100, 356, 3), dtype='uint8')*255
+
         self.create_frames()
         # self.load_database()
         print('%s%s%s' % ('*'*20, 'Loaded GUI', '*'*20))
@@ -98,6 +107,10 @@ class VideoQueryGUI(tk.Frame):
             self.frame1, text='Find matches', command=self.run_match)
         self.run_button.grid(row=1, column=0)
 
+        # self.dummy_btn = tk.Button(
+        #     self.frame1, text='Debug', command=self.dummy_fn)
+        # self.dummy_btn.grid(row=2, column=0)
+
         self.match_list = tk.Listbox(self.frame1, height=4)
         self.yscroll = tk.Scrollbar(
             self.frame1, orient=tk.VERTICAL, command=self.match_list.yview)
@@ -123,37 +136,34 @@ class VideoQueryGUI(tk.Frame):
         self.info_text = tk.StringVar()
         self.info_text.set('STATUS')
         self.info_label = tk.Label(
-            self.frame2, textvar=self.info_text, justify=tk.LEFT, background='green')
+            self.frame2, textvar=self.info_text, justify=tk.LEFT, anchor='w')
         # self.info_label = tk.Label(self.frame2, text='')
         self.info_label.grid(row=0, column=0, stick='nswe')
 
-        self.corr_curve_label = tk.Label(self.frame2, text='')
-        self.corr_curve_label.config(background='yellow')
+        self.corr_curve_label = tk.Label(self.frame2)
+        # self.corr_curve_label.config(background='yellow')
         self.corr_curve_label.bind("<Button-1>", self.show_corr_plots)
-        self.corr_curve_label.grid(row=0, column=1, stick='nsew')
+        self.corr_curve_label.grid(row=0, column=1, stick='nse')
 
         self.frame2.grid_columnconfigure(0, weight=1)
         self.frame2.grid_columnconfigure(1, weight=1)
 
-        # End frame - Video players
-        # self.frame3 = tk.LabelFrame(
-        #     self.master, text='', relief=tk.RAISED,
-        #     height=200
-        # )
-        # self.frame3.pack(side='top', expand=True, fill='both')
+        # self.query_player = VideoPlayer(self.frame2)
+        # self.query_player.grid(row=1, column=0, stick='nsw')
+        # self.db_player = VideoPlayer(self.frame2)
+        # self.db_player.grid(row=1, column=1, stick='nse')
 
-        self.query_player = VideoPlayer(self.frame2)
-        self.query_player.grid(row=1, column=0, stick='nsw')
-        self.db_player = VideoPlayer(self.frame2)
-        self.db_player.grid(row=1, column=1, stick='nse')
-
-        # self.poll_match_list()
+        # self.draw_corr_label()
 
     def load_query_video(self):
         self.update_status('Select query', clear=True)
+        selected_folder = None
+        self.master.update()
         selected_folder = askdirectory(
             initialdir=config.QUERY_VID_ROOT, title='Select query folder')
-        # self.update_status('Selected ' + selected_folder)
+        # selected_folder = askopenfilename(
+        #     initialdir=config.QUERY_VID_ROOT, title='Select query folder')
+        self.update_status('Selected ' + selected_folder)
 
         if selected_folder == '':
             return
@@ -208,10 +218,7 @@ class VideoQueryGUI(tk.Frame):
                 aud_path = glob.glob(os.path.join(selected_folder, '*.wav'))[0]
                 self.update_status('Loading video %s' %
                                    os.path.basename(vid_path))
-                # print('Loading video %s' %
-                #   os.path.basename(vid_path))
                 self.query_vid = Video(vid_path, aud_path)
-                # print('Loaded in %0.4fs' % (time.time()-tic))
 
                 # Computing features
                 tic = time.time()
@@ -274,11 +281,33 @@ class VideoQueryGUI(tk.Frame):
             curr_video = self.find_matching_db_vid(
                 self.final_ranks[current][0])
             self.db_player.load_video(curr_video)
+            plot = generate_plot(self.final_ranks[current])
+            self.corr_plot = resize(
+                plot, (100, 356, 3), preserve_range=True).astype('uint8')
             self.curr_selection = current
         self.master.after(250, self.poll_match_list)
 
     def show_corr_plots(self, event):
-        print('Show plots')
+        generate_plots(self.final_ranks, 'Compiled')
+        plt.pause(1)
+
+    def draw_corr_label(self):
+        im = ImageTk.PhotoImage(
+            Image.fromarray(
+                self.corr_plot
+            )
+        )
+        self.corr_curve_label.configure(image=im)
+        self.corr_curve_label.image = im
+
+        # self.update_status('Drew_plot')
+        # self.update_status(repr(self.corr_plot.shape))
+        self.master.after(250, self.draw_corr_label)
+
+    def dummy_fn(self):
+        self.corr_plot = np.ones(
+            (100, 356, 3), dtype='uint8') * np.random.randint(0, 255)
+        # self.update_status(str(self.db_player.winfo_width()))
 
     def find_matching_db_vid(self, vidname):
         for vid in self.db_vids:

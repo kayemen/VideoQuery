@@ -39,6 +39,45 @@ def rank_features(query_scores):
     return final_scores
 
 
+def generate_plot(score):
+
+    Y = score[3]
+    # vid_name = score[0]
+    # y = score[2]
+    # labels = score[4]
+    # colors = [config.FEATURE_COLORS[label] for label in labels]
+
+    # plt.figure(title+'_stacked', figsize=(12, 12))
+    f = plt.figure()
+    ax = plt.Axes(f, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    ax.plot(range(Y.shape[0]), Y)
+    f.add_axes(ax)
+    # f.tight_layout()
+    f.canvas.draw()
+
+    data = np.fromstring(f.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    data = data.reshape(f.canvas.get_width_height()[::-1] + (3,))
+
+    h, w, _ = data.shape
+    for i in range(w):
+        if np.any(data[:, i, :]):
+            left_lim = i
+            break
+
+    for i in range(1, 1+w):
+        if np.any(data[:, -i, :]):
+            right_lim = -i
+            break
+
+    data = data[:, left_lim:right_lim, :]
+    data = np.copy(data)
+
+    # f.close()
+
+    return data
+
+
 def generate_plots(final_scores, title, save_location=None):
     [print(x[:2]) for x in final_scores]
     stack_ylim = max([np.max(score[3]) for score in final_scores])
