@@ -43,7 +43,8 @@ class VideoQueryGUI(tk.Frame):
         # self.load_database()
         print('%s%s%s' % ('*'*20, 'Loaded GUI', '*'*20))
 
-        self.load_db_thread = threading.Thread(target=self.load_database)
+        self.load_db_thread = threading.Thread(
+            target=self.load_database, name='database loader')
         self.load_db_thread.start()
 
         # self.load_database()
@@ -148,12 +149,12 @@ class VideoQueryGUI(tk.Frame):
         self.frame2.grid_columnconfigure(0, weight=1)
         self.frame2.grid_columnconfigure(1, weight=1)
 
-        # self.query_player = VideoPlayer(self.frame2)
-        # self.query_player.grid(row=1, column=0, stick='nsw')
-        # self.db_player = VideoPlayer(self.frame2)
-        # self.db_player.grid(row=1, column=1, stick='nse')
+        self.query_player = VideoPlayer(self.frame2)
+        self.query_player.grid(row=1, column=0, stick='nsw')
+        self.db_player = VideoPlayer(self.frame2)
+        self.db_player.grid(row=1, column=1, stick='nse')
 
-        # self.draw_corr_label()
+        self.draw_corr_label()
 
     def load_query_video(self):
         self.update_status('Select query', clear=True)
@@ -169,11 +170,11 @@ class VideoQueryGUI(tk.Frame):
             return
 
         self.query_loader = threading.Thread(
-            target=self.load_query, args=(selected_folder, ))
+            target=self.load_query, args=(selected_folder, ), name='query_loader')
         self.query_loader.start()
 
-        while self.query_loader.is_alive():
-            self.update_idletasks()
+        # while self.query_loader.is_alive():
+        #     self.update_idletasks()
 
     def load_query(self, selected_folder=None):
         self.update_status('Loading query video', clear=True)
@@ -244,6 +245,7 @@ class VideoQueryGUI(tk.Frame):
             self.update_status('Saving results to database')
             with open(os.path.join(selected_folder, 'query_scores.pkl'), 'wb') as pkl_fp:
                 pickle.dump(self.query_scores, pkl_fp)
+            self.update_status('Saved results to database')
 
         self.query_player.load_video(self.query_vid)
 
@@ -268,7 +270,9 @@ class VideoQueryGUI(tk.Frame):
         else:
             status_text = '%s\n%s' % (self.info_text.get(), text)
         lines = status_text.split('\n')
-        if len(lines) > 6:
+        if len(lines) < 6:
+            status_text = '\n'.join(lines + ['']*(6-len(lines)))
+        elif len(lines) > 6:
             status_text = '\n'.join([lines[0]]+lines[-5:])
         self.info_text.set(status_text)
 

@@ -42,16 +42,10 @@ def rank_features(query_scores):
 def generate_plot(score):
 
     Y = score[3]
-    # vid_name = score[0]
-    # y = score[2]
-    # labels = score[4]
-    # colors = [config.FEATURE_COLORS[label] for label in labels]
-
-    # plt.figure(title+'_stacked', figsize=(12, 12))
     f = plt.figure()
     ax = plt.Axes(f, [0., 0., 1., 1.])
     ax.set_axis_off()
-    ax.plot(range(Y.shape[0]), Y)
+    ax.plot(range(Y.shape[0]), Y, linewidth=3)
     f.add_axes(ax)
     # f.tight_layout()
     f.canvas.draw()
