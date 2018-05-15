@@ -66,3 +66,9 @@ query/*
 
 \.vscode/
 local_config.py
+
+proj_spec/demodaytesting/demodaytesting/blind/HQ3/
+
+proj_spec/demodaytesting/demodaytesting/given/Q6/
+
+proj_spec/demodaytesting/demodaytesting/given/Q7/
